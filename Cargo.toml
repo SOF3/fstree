@@ -1,0 +1,30 @@
+[package]
+name = "fstree"
+version = "0.1.0"
+authors = ["SOFe <sofe2038@gmail.com>"]
+edition = "2018"
+license = "AGPL-3.0"
+repository = "https://github.com/SOF3/fstree.git"
+homepage = "https://github.com/SOF3/fstree"
+description = "Cross-platform harddisk usage diagnostics tool"
+
+[dependencies]
+actix-web = "1.0"
+byte-unit = "3.0"
+clap = "2.33"
+derive_more = "0.15.0"
+filesize = "0.1.0"
+flate2 = "1.0"
+futures-timer = "0.4.0"
+futures-util-preview = "0.3.0-alpha.19"
+maplit = "1.0"
+rand = "0.7.2"
+serde = {version = "1.0", features = ["derive", "std", "rc"]}
+serde_json = "1.0"
+static_assertions = "1.0"
+terminal_size = "0.1.8"
+tokio = "0.2.0-alpha.6"
+tokio-fs = "0.2.0-alpha.6"
+
+[badges]
+travis-ci = {repository = "SOF3/fstree"}
