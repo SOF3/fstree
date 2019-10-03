@@ -15,5 +15,3 @@ script:
   - cargo check --all --verbose $RELEASE_FLAG
   - cargo build --all --verbose $RELEASE_FLAG
   - cargo test --all --verbose $RELEASE_FLAG
-  - cargo doc --all --verbose $RELEASE_FLAG
-
