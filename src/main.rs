@@ -16,6 +16,7 @@
 #[allow(unused_imports)]
 use crate::result::{make_err, Result};
 
+use std::borrow::Cow;
 use std::time::{Duration, Instant};
 
 use futures_timer::Delay;
@@ -25,8 +26,16 @@ mod cli;
 mod crawl;
 mod result;
 
+#[cfg(feature = "history")]
+mod history;
+
+#[cfg(feature = "web")]
+mod web;
+
 #[tokio::main]
 async fn main() -> Result {
+    pretty_env_logger::init();
+
     let args = cli::read()?;
 
     if !args.dir.is_dir() {
@@ -35,10 +44,12 @@ async fn main() -> Result {
         ))?
     }
 
-    println!("Scanning {}", args.dir.display());
+    log::info!("Scanning {}", args.dir.display());
     let epoch = Instant::now();
     let ctx = &crawl::ExploreContext::default();
-    let mut ftree = Box::pin(crawl::explore(args.dir, args.shake.get_bytes() as u64, ctx));
+    let mut ftree = Box::pin(crawl::explore(args.dir, args.shake.0, ctx));
+
+    #[allow(unused_variables)]
     let tree = loop {
         let timeout = Delay::new(Duration::from_millis(100));
         match future::select(timeout, ftree).await {
@@ -54,17 +65,29 @@ async fn main() -> Result {
         }
     };
 
-    eprintln!("Writing results to tree.json.gz");
-    let f = std::fs::File::create("tree.json.gz")?;
-    let f = flate2::GzBuilder::new()
-        .filename("tree.json")
-        .write(f, flate2::Compression::default());
+    #[cfg(feature = "history")]
+    {
+        if !args.no_write {
+            let history_dir = if let Some(dir) = &args.history_dir {
+                Cow::Borrowed(dir)
+            } else {
+                Cow::Owned(
+                    dirs::home_dir()
+                        .expect("Failed to get home directory")
+                        .join(".fstree/history"),
+                )
+            };
+            history::write(&tree, &history_dir).await?;
+            // history::rotate()?;
+        }
+    }
 
-    let fmter = serde_json::ser::PrettyFormatter::with_indent(&[]);
-    let mut serer = serde_json::Serializer::with_formatter(f, fmter);
-
-    use serde::Serialize;
-    tree.serialize(&mut serer).map_err(make_err)?;
+    #[cfg(feature = "web")]
+    {
+        if !args.no_web {
+            web::run(tree, &args.host, args.port)?;
+        }
+    }
 
     Ok(())
 }

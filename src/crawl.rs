@@ -29,13 +29,15 @@ use derive_more::AddAssign;
 use futures_util::future::{join_all, BoxFuture, FutureExt};
 use futures_util::stream::StreamExt;
 use maplit::hashmap;
+#[cfg(feature = "history")]
 use serde::{Deserialize, Serialize};
 use static_assertions::assert_impl_all;
 use terminal_size::terminal_size;
 use tokio::io;
 use tokio_fs as fs;
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "history", derive(Serialize, Deserialize))]
 pub enum Node {
     File {
         name: StringRef,
@@ -151,7 +153,8 @@ fn make_other_stats(size: Size, fte: FileTypeExt) -> NodeStats {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "history", derive(Serialize, Deserialize))]
 pub struct StaticError(String);
 
 impl From<io::Error> for StaticError {
@@ -160,7 +163,8 @@ impl From<io::Error> for StaticError {
     }
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+#[cfg_attr(feature = "history", derive(Serialize, Deserialize))]
 pub enum FileTypeExt {
     File(StringRef),
     Dir,
@@ -173,13 +177,15 @@ pub enum FileTypeExt {
     Other(StringRef),
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "history", derive(Serialize, Deserialize))]
 pub struct NodeStats {
     pub total: TypedStats,
     pub by_extension: Vec<(FileTypeExt, TypedStats)>,
 }
 
-#[derive(Debug, Clone, Copy, Default, AddAssign, Deserialize, Serialize)]
+#[derive(Debug, Clone, Copy, Default, AddAssign)]
+#[cfg_attr(feature = "history", derive(Serialize, Deserialize))]
 pub struct TypedStats {
     pub files: AggStats,
     pub dirs: AggStats,
@@ -187,13 +193,15 @@ pub struct TypedStats {
     pub errors: usize,
 }
 
-#[derive(Debug, Clone, Copy, Default, AddAssign, Deserialize, Serialize)]
+#[derive(Debug, Clone, Copy, Default, AddAssign)]
+#[cfg_attr(feature = "history", derive(Serialize, Deserialize))]
 pub struct AggStats {
     pub count: usize,
     pub size: Size,
 }
 
-#[derive(Debug, Clone, Copy, Default, AddAssign, Deserialize, Serialize)]
+#[derive(Debug, Clone, Copy, Default, AddAssign)]
+#[cfg_attr(feature = "history", derive(Serialize, Deserialize))]
 pub struct Size {
     pub real: u64,
     pub content: u64,

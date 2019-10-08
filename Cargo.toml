@@ -10,29 +10,33 @@ description = "Cross-platform harddisk usage diagnostics tool"
 
 [features]
 web = [
-"actix-web",
+	"actix-web",
 ]
 history = [
-"serde",
-"serde_json",
+	"flate2",
+	"serde",
+	"serde_json",
 ]
 default = ["history", "web"]
 
 [dependencies]
 actix-web = {version = "1.0", optional = true}
 byte-unit = "3.0"
-clap = "2.33"
 derive_more = "0.15.0"
+dirs = "2.0"
 filesize = "0.1.0"
-flate2 = "1.0"
+flate2 = {version = "1.0", optional = true}
 futures-timer = "0.5.0"
 futures-util-preview = "0.3.0-alpha.19"
+include-flate = {version = "0.1.3", features = ["stable"]}
+log = "0.4.8"
 maplit = "1.0"
+pretty_env_logger = "0.3.1"
 rand = "0.7.2"
 serde = {version = "1.0", features = ["derive", "std", "rc"], optional = true}
 serde_json = {version = "1.0", optional = true}
 static_assertions = "1.0"
-structopt = ""
+structopt = "0.3.2"
 terminal_size = "0.1.8"
 tokio = "0.2.0-alpha.6"
 tokio-fs = "0.2.0-alpha.6"
