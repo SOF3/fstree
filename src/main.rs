@@ -53,8 +53,7 @@ async fn main() -> Result {
     let tree = loop {
         let timeout = Delay::new(Duration::from_millis(100));
         match future::select(timeout, ftree).await {
-            Either::Left((res, rtree)) => {
-                res?;
+            Either::Left(((), rtree)) => {
                 ftree = rtree;
                 ctx.display(epoch);
             }
