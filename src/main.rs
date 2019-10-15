@@ -57,7 +57,7 @@ async fn main() -> Result {
             }else {
                 let tree = scan(&args).await?;
                 if !args.no_web {
-                    web::run(Some(&tree), &args.host, args.port)?;
+                    web::run(Some(tree), &args.host, args.port)?;
                 }
             }
         } else {

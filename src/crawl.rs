@@ -220,6 +220,9 @@ pub struct ExploreContext {
 
 impl ExploreContext {
     pub fn display(&self, start: Instant) {
+        if !atty::is(atty::Stream::Stderr) {
+            return;
+        }
         let elapsed = start.elapsed().as_secs();
         let pending = self.pending.load(Ordering::Relaxed);
         let complete = self.complete.load(Ordering::Relaxed);

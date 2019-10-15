@@ -21,18 +21,18 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
-use actix_web::{body::Body, web, App, HttpResponse, HttpServer};
+use actix_web::{body::Body, App, HttpResponse, HttpServer, Responder};
 use include_flate::flate;
 use tempdir::TempDir;
 
 use crate::crawl;
 
-pub fn run(current: Option<&crawl::Node>, ip: &str, port: u16) -> Result {
+pub fn run(current: Option<crawl::Node>, ip: &str, port: u16) -> Result {
     log::debug!("Extracting assets");
     let temp_dir = extract_assets()?;
 
     log::info!("Starting web server on {}:{}", ip, port);
-    serve(ip, port, temp_dir)?;
+    serve(ip, port, current, temp_dir)?;
 
     Ok(())
 }
@@ -50,27 +50,28 @@ fn extract_assets() -> Result<TempDir> {
     Ok(dir)
 }
 
-fn serve(ip: &str, port: u16, temp_dir: TempDir) -> Result {
+#[actix_web::get("/")]
+fn index() -> impl Responder {
+    flate!(static RES: [u8] from "web/index.html");
+    HttpResponse::Ok()
+        .content_type("text/html")
+        .body(Body::Bytes(RES[..].into()))
+}
+
+fn serve(ip: &str, port: u16, current: Option<crawl::Node>, temp_dir: TempDir) -> Result {
+    let current = Arc::new(current);
     let temp_dir = Arc::new(temp_dir);
 
     let server = HttpServer::new(move || {
         App::new()
             .service(actix_files::Files::new("/pkg", temp_dir.path()))
-            .route(
-                "/",
-                web::get().to(|| {
-                    flate!(static RES: [u8] from "web/index.html");
-                    HttpResponse::Ok()
-                        .content_type("text/html")
-                        .body(Body::Bytes(RES[..].into()))
-                }),
-            )
+            .service(index)
     })
-    .bind(&format!("{}:{}", ip, port))?;
+    .bind((ip, port))?;
 
     thread::spawn(move || {
         thread::sleep(Duration::new(1, 0));
-        webbrowser::open(&format!("http://127.0.0.1:{}", port)).ok();
+        drop(webbrowser::open(&format!("http://127.0.0.1:{}", port)));
     });
 
     server.run()?;

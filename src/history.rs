@@ -20,6 +20,7 @@ use std::fs;
 use std::path::PathBuf;
 
 use chrono::offset::Local as LocalTz;
+use count_write::CountWrite;
 use flate2::{Compression, GzBuilder};
 use serde::Serialize;
 use serde_json::ser::{PrettyFormatter, Serializer};
@@ -38,14 +39,18 @@ pub async fn write(tree: &crawl::Node, dir: &PathBuf) -> Result {
         .filename(file_name.as_str())
         .comment(format!("Filesystem analysis on {}", &date))
         .write(f, Compression::default());
+    let cw = CountWrite::from(f);
 
     let fmter = PrettyFormatter::with_indent(&[]);
-    let mut serer = Serializer::with_formatter(f, fmter);
+    let mut serer = Serializer::with_formatter(cw, fmter);
 
     tree.serialize(&mut serer).map_err(make_err)?;
 
-    drop(serer);
-    log::info!(" bytes written to {}", file_path.display());
+    let cw = serer.into_inner();
+    let size = cw.count();
+    drop(cw);
+
+    log::info!("{} bytes written to {}", size, file_path.display());
 
     Ok(())
 }
