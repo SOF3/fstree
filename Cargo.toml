@@ -6,13 +6,17 @@ edition = "2018"
 license = "AGPL-3.0"
 repository = "https://github.com/SOF3/fstree.git"
 homepage = "https://github.com/SOF3/fstree"
+readme = "README.md"
 description = "Cross-platform harddisk usage diagnostics tool"
 
 [features]
 web = [
 	"actix-web",
+	"tar",
+	"tempdir",
 ]
 history = [
+	"chrono",
 	"flate2",
 	"serde",
 	"serde_json",
@@ -20,8 +24,11 @@ history = [
 default = ["history", "web"]
 
 [dependencies]
+actix-files = "0.1.5"
 actix-web = {version = "1.0", optional = true}
 byte-unit = "3.0"
+cfg-if = "0.1.10"
+chrono = {version = "0.4.9", optional = true}
 derive_more = "0.15.0"
 dirs = "2.0"
 filesize = "0.1.0"
@@ -37,9 +44,12 @@ serde = {version = "1.0", features = ["derive", "std", "rc"], optional = true}
 serde_json = {version = "1.0", optional = true}
 static_assertions = "1.0"
 structopt = "0.3.2"
+tar = {version = "0.4.26", optional = true}
+tempdir = {version = "0.3.7", optional = true}
 terminal_size = "0.1.8"
 tokio = "0.2.0-alpha.6"
 tokio-fs = "0.2.0-alpha.6"
+webbrowser = "0.5.2"
 
 [badges]
 travis-ci = {repository = "SOF3/fstree"}

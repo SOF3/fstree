@@ -19,6 +19,7 @@ use crate::result::{make_err, Result};
 use std::fs;
 use std::path::PathBuf;
 
+use chrono::offset::Local as LocalTz;
 use flate2::{Compression, GzBuilder};
 use serde::Serialize;
 use serde_json::ser::{PrettyFormatter, Serializer};
@@ -26,18 +27,25 @@ use serde_json::ser::{PrettyFormatter, Serializer};
 use crate::crawl;
 
 pub async fn write(tree: &crawl::Node, dir: &PathBuf) -> Result {
-    log::info!("Writing results to tree.json.gz");
+    log::info!("Writing history to {}", dir.display());
     tokio::fs::create_dir_all(&dir).await?;
 
-    let f = fs::File::create(dir.join("tree.json.gz"))?;
+    let date = LocalTz::now().format("%Y-%m-%d_%H-%M-%S");
+    let file_name = format!("{}.json", &date);
+    let file_path = dir.join(format!("{}.gz", &file_name));
+    let f = fs::File::create(&file_path)?;
     let f = GzBuilder::new()
-        .filename("tree.json")
+        .filename(file_name.as_str())
+        .comment(format!("Filesystem analysis on {}", &date))
         .write(f, Compression::default());
 
     let fmter = PrettyFormatter::with_indent(&[]);
     let mut serer = Serializer::with_formatter(f, fmter);
 
     tree.serialize(&mut serer).map_err(make_err)?;
+
+    drop(serer);
+    log::info!(" bytes written to {}", file_path.display());
 
     Ok(())
 }

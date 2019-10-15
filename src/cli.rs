@@ -51,6 +51,11 @@ pub struct CommandArgs {
     #[structopt(long)]
     pub no_web: bool,
 
+    /// Run web server only and skip scanning
+    #[cfg(feature = "web")]
+    #[structopt(long)]
+    pub web_only: bool,
+
     /// The hostmask to start web frontend on
     #[cfg(feature = "web")]
     #[structopt(long, default_value = "127.0.0.1")]
