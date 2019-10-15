@@ -17,8 +17,10 @@
 use crate::result::{make_err, Result};
 
 use std::borrow::Cow;
+use std::env;
 use std::time::{Duration, Instant};
 
+use cfg_if::cfg_if;
 use futures_timer::Delay;
 use futures_util::future::{self, Either};
 
@@ -34,6 +36,7 @@ mod web;
 
 #[tokio::main]
 async fn main() -> Result {
+    default_env();
     pretty_env_logger::init();
 
     let args = cli::read()?;
@@ -44,10 +47,32 @@ async fn main() -> Result {
         ))?
     }
 
+    cfg_if! {
+        if #[cfg(feature = "web")] {
+            if args.web_only {
+                if args.no_web {
+                    return Err(make_err("--web-only and --no-web are contradictory arguments"));
+                }
+                web::run(None, &args.host, args.port)?;
+            }else {
+                let tree = scan(&args).await?;
+                if !args.no_web {
+                    web::run(Some(&tree), &args.host, args.port)?;
+                }
+            }
+        } else {
+            scan(&args).await?;
+        }
+    }
+
+    Ok(())
+}
+
+async fn scan(args: &cli::CommandArgs) -> Result<crawl::Node> {
     log::info!("Scanning {}", args.dir.display());
     let epoch = Instant::now();
     let ctx = &crawl::ExploreContext::default();
-    let mut ftree = Box::pin(crawl::explore(args.dir, args.shake.0, ctx));
+    let mut ftree = Box::pin(crawl::explore(args.dir.clone(), args.shake.0, ctx));
 
     #[allow(unused_variables)]
     let tree = loop {
@@ -81,12 +106,11 @@ async fn main() -> Result {
         }
     }
 
-    #[cfg(feature = "web")]
-    {
-        if !args.no_web {
-            web::run(tree, &args.host, args.port)?;
-        }
-    }
+    Ok(tree)
+}
 
-    Ok(())
+fn default_env() {
+    if env::var("RUST_LOG") == Err(env::VarError::NotPresent) {
+        env::set_var("RUST_LOG", "info");
+    }
 }
