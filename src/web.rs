@@ -16,13 +16,17 @@
 #[allow(unused_imports)]
 use crate::result::{make_err, Result};
 
+use std::collections::HashMap;
 use std::io::Cursor;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use std::thread;
 use std::time::Duration;
 
-use actix_web::{body::Body, App, HttpResponse, HttpServer, Responder};
+use actix_web::body::Body;
+use actix_web::web::{Data, Json};
+use actix_web::{App, HttpResponse, HttpServer, Responder};
 use include_flate::flate;
+use lazy_static::lazy_static;
 use tempdir::TempDir;
 
 use crate::crawl;
@@ -50,6 +54,11 @@ fn extract_assets() -> Result<TempDir> {
     Ok(dir)
 }
 
+type Reports = Arc<RwLock<HashMap<String, crawl::Node>>>;
+lazy_static! {
+    static ref LATEST_REPORT_NAME: String = "Latest Report".to_string();
+}
+
 #[actix_web::get("/")]
 fn index() -> impl Responder {
     flate!(static RES: [u8] from "web/index.html");
@@ -58,14 +67,41 @@ fn index() -> impl Responder {
         .body(Body::Bytes(RES[..].into()))
 }
 
+#[actix_web::get("/xhr/has_current")]
+fn has_current(reports: Data<Reports>) -> Json<bool> {
+    Json(reports.read().unwrap().contains_key(&*LATEST_REPORT_NAME))
+}
+
+#[actix_web::get("/xhr/list_reports")]
+fn list_reports(_reports: Data<Reports>) -> Json<()> {
+    Json(())
+}
+
+#[actix_web::post("/xhr/load_report")]
+fn load_report(name: String, reports: Data<Reports>) -> Json<bool> {
+    let loaded = reports.read().unwrap().contains_key(&*LATEST_REPORT_NAME);
+    if loaded {
+        return Json(true);
+    }
+
+    unimplemented!()
+}
+
 fn serve(ip: &str, port: u16, current: Option<crawl::Node>, temp_dir: TempDir) -> Result {
-    let current = Arc::new(current);
+    let mut map = HashMap::new();
+    if let Some(current) = current {
+        map.insert(LATEST_REPORT_NAME.clone(), current);
+    }
+    let reports: Reports = Arc::new(RwLock::new(map));
     let temp_dir = Arc::new(temp_dir);
 
     let server = HttpServer::new(move || {
         App::new()
+            .data(Reports::clone(&reports))
             .service(actix_files::Files::new("/pkg", temp_dir.path()))
             .service(index)
+            .service(has_current)
+            .service(list_reports)
     })
     .bind((ip, port))?;
 
