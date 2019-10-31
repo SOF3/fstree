@@ -102,7 +102,12 @@ async fn scan(args: &cli::CommandArgs) -> Result<crawl::Node> {
                 )
             };
             history::write(&tree, &history_dir).await?;
-            // history::rotate()?;
+
+            if !args.no_rotate {
+                if let Err(err) = history::rotate(&history_dir, args.rotate_days).await {
+                    log::error!("Error rotating logs: {}", err);
+                }
+            }
         }
     }
 

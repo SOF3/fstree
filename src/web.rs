@@ -67,22 +67,24 @@ fn index() -> impl Responder {
         .body(Body::Bytes(RES[..].into()))
 }
 
-#[actix_web::get("/xhr/has_current")]
+#[actix_web::post("/xhr/has_current")]
 fn has_current(reports: Data<Reports>) -> Json<bool> {
     Json(reports.read().unwrap().contains_key(&*LATEST_REPORT_NAME))
 }
 
-#[actix_web::get("/xhr/list_reports")]
+#[actix_web::post("/xhr/list_reports")]
 fn list_reports(_reports: Data<Reports>) -> Json<()> {
     Json(())
 }
 
-#[actix_web::post("/xhr/load_report")]
+#[actix_web::get("/xhr/load_report")]
 fn load_report(name: String, reports: Data<Reports>) -> Json<bool> {
-    let loaded = reports.read().unwrap().contains_key(&*LATEST_REPORT_NAME);
+    let loaded = reports.read().unwrap().contains_key(&name);
     if loaded {
         return Json(true);
     }
+
+    dbg!(name);
 
     unimplemented!()
 }
@@ -102,6 +104,7 @@ fn serve(ip: &str, port: u16, current: Option<crawl::Node>, temp_dir: TempDir) -
             .service(index)
             .service(has_current)
             .service(list_reports)
+            .service(load_report)
     })
     .bind((ip, port))?;
 

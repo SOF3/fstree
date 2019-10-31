@@ -16,25 +16,26 @@
 #[allow(unused_imports)]
 use crate::result::{make_err, Result};
 
-use std::fs;
 use std::path::PathBuf;
 
 use chrono::offset::Local as LocalTz;
 use count_write::CountWrite;
 use flate2::{Compression, GzBuilder};
+use futures_util::stream::StreamExt;
 use serde::Serialize;
 use serde_json::ser::{PrettyFormatter, Serializer};
+use tokio::fs;
 
 use crate::crawl;
 
 pub async fn write(tree: &crawl::Node, dir: &PathBuf) -> Result {
     log::info!("Writing history to {}", dir.display());
-    tokio::fs::create_dir_all(&dir).await?;
+    fs::create_dir_all(&dir).await?;
 
     let date = LocalTz::now().format("%Y-%m-%d_%H-%M-%S");
     let file_name = format!("{}.json", &date);
     let file_path = dir.join(format!("{}.gz", &file_name));
-    let f = fs::File::create(&file_path)?;
+    let f = std::fs::File::create(&file_path)?; // TODO make this async
     let f = GzBuilder::new()
         .filename(file_name.as_str())
         .comment(format!("Filesystem analysis on {}", &date))
@@ -51,6 +52,54 @@ pub async fn write(tree: &crawl::Node, dir: &PathBuf) -> Result {
     drop(cw);
 
     log::info!("{} bytes written to {}", size, file_path.display());
+
+    Ok(())
+}
+
+pub async fn rotate(dir: &PathBuf, rotate_days: u32) -> Result {
+    let mut entries = vec![];
+
+    let mut iter = fs::read_dir(dir.clone()).await?;
+    while let Some(entry) = iter.next().await {
+        let entry = match entry {
+            Ok(entry) => entry,
+            Err(err) => {
+                log::error!("Failed scanning history directory: {}", err);
+                continue;
+            }
+        };
+        let meta = match entry.metadata().await {
+            Ok(meta) => meta,
+            Err(err) => {
+                log::warn!("Failed to stat {}: {}", entry.path().display(), err);
+                continue;
+            },
+        };
+        let modified = match meta.modified() {
+            Ok(modified) => modified,
+            Err(_) => {
+                log::warn!("Rotation aborted: Failed to retrieve last modification time of {}", entry.path().display());
+                return Ok(());
+            }
+        };
+        let elapsed = match modified.elapsed() {
+            Ok(duration) => duration,
+            Err(_) => {
+                log::warn!("History file {} is last modified in the future. Was the system time changed?", entry.path().display());
+                continue;
+            }
+        };
+        if elapsed.as_secs() > u64::from(rotate_days) * 86400 {
+            entries.push(entry.path());
+        }
+    }
+
+    for entry in entries {
+        log::info!("Removing old history file {}", entry.display());
+        if let Err(err) = fs::remove_file(&entry).await {
+            log::error!("Failed to remove {}: {}", entry.display(), err);
+        }
+    }
 
     Ok(())
 }

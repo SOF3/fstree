@@ -76,7 +76,8 @@ pub struct CommandArgs {
     #[structopt(long, parse(from_os_str))]
     pub history_dir: Option<PathBuf>,
 
-    /// Prevent performing log rotation after writing history file
+    /// Prevent performing log rotation after writing history file;
+    /// this option is ignored if --no-write is passed
     #[cfg(feature = "history")]
     #[structopt(long)]
     pub no_rotate: bool,
