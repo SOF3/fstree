@@ -21,8 +21,8 @@ use std::env;
 use std::time::{Duration, Instant};
 
 use cfg_if::cfg_if;
-use futures_timer::Delay;
 use futures_util::future::{self, Either};
+use tokio::timer;
 
 mod cli;
 mod crawl;
@@ -76,7 +76,7 @@ async fn scan(args: &cli::CommandArgs) -> Result<crawl::Node> {
 
     #[allow(unused_variables)]
     let tree = loop {
-        let timeout = Delay::new(Duration::from_millis(100));
+        let timeout = timer::delay_for(Duration::from_millis(100));
         match future::select(timeout, ftree).await {
             Either::Left(((), rtree)) => {
                 ftree = rtree;
