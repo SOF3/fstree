@@ -73,19 +73,25 @@ pub async fn rotate(dir: &PathBuf, rotate_days: u32) -> Result {
             Err(err) => {
                 log::warn!("Failed to stat {}: {}", entry.path().display(), err);
                 continue;
-            },
+            }
         };
         let modified = match meta.modified() {
             Ok(modified) => modified,
             Err(_) => {
-                log::warn!("Rotation aborted: Failed to retrieve last modification time of {}", entry.path().display());
+                log::warn!(
+                    "Rotation aborted: Failed to retrieve last modification time of {}",
+                    entry.path().display()
+                );
                 return Ok(());
             }
         };
         let elapsed = match modified.elapsed() {
             Ok(duration) => duration,
             Err(_) => {
-                log::warn!("History file {} is last modified in the future. Was the system time changed?", entry.path().display());
+                log::warn!(
+                    "History file {} is last modified in the future. Was the system time changed?",
+                    entry.path().display()
+                );
                 continue;
             }
         };
