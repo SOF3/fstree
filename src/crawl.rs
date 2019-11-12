@@ -349,7 +349,7 @@ fn entry_to_node(
         ctx.complete.fetch_add(1, Ordering::Relaxed);
         ret
     }
-    .boxed()
+        .boxed()
 }
 
 async fn entry_to_node_res(
