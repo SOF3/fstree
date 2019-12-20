@@ -24,7 +24,7 @@ history = [
 default = ["history", "web"]
 
 [dependencies]
-actix-files = "0.1.5"
+actix-files = "0.2.0"
 actix-web = {version = "1.0", optional = true}
 atty = "0.2.13"
 byte-unit = "3.0"
