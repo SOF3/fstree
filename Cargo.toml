@@ -32,7 +32,7 @@ cfg-if = "0.1.10"
 chrono = {version = "0.4.9", optional = true}
 count-write = "0.1.0"
 derive_more = "0.99.0"
-dirs = "2.0"
+dirs = "3.0"
 filesize = "0.1.0"
 flate2 = {version = "1.0", optional = true}
 futures-util-preview = "0.3.0-alpha.19"
