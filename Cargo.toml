@@ -27,7 +27,7 @@ default = ["history", "web"]
 actix-files = "0.1.5"
 actix-web = {version = "1.0", optional = true}
 atty = "0.2.13"
-byte-unit = "3.0"
+byte-unit = "4.0"
 cfg-if = "0.1.10"
 chrono = {version = "0.4.9", optional = true}
 count-write = "0.1.0"
